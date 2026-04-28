@@ -1,0 +1,144 @@
+package parser;
+import scanner.*;
+import java_cup.runtime.*;
+import java.util.*;
+
+parser code {:
+    public static void main(String[] args) throws Exception {
+        Lexer lexer = new Lexer(new java.io.InputStreamReader(System.in));
+
+        Symbol token;
+        while ((token = lexer.next_token()).sym != sym.EOF) {
+            System.out.println("Token: " + sym.terminalNames[token.sym] + " -> " + token.value);
+        }
+    }
+:};
+
+/* ===== TERMINALES ===== */
+
+/* tipos */
+terminal INT, FLOAT, CHAR, STRING, BOOL, EMPTY, EXPINT_KW, FRAC_KW;
+
+/* control */
+terminal MAIN, IF, ELSE, BREAK, RETURN, CASE, DEFAULT, SWITCH, WHILE, DO;
+
+/* símbolos */
+terminal PAR_I, PAR_D, LLAVE_I, LLAVE_D;
+terminal ARR_I, ARR_D, COMMA;
+terminal PYC, ASSIGN, SEP, DOSPUNTOS;
+
+/* operadores */
+terminal PLUS, MINUS, MULT, DIV, MOD, POW;
+terminal INC, DEC;
+terminal AND, OR, NOT;
+
+/* relacionales */
+terminal EQUAL, N_EQUAL, LESS_T, LESS_TE, GREATER_T, GREATER_TE;
+
+/* valores */
+terminal TRUE, FALSE;
+terminal String ID, NUM, FRAC_LIT, EXPINT_LIT, STRING_LIT, CHAR_LIT;
+
+/* entrada y salida */
+terminal CIN, COUT;
+
+/* ===== NO TERMINALES ===== */
+non terminal  programa, funciones, funcion;
+non terminal  tipo_retorno;
+non terminal  main_proc, bloque, sentencias, sentencia;
+non terminal  condicional, bucle, multi_choice;
+non terminal  lista_casos, caso, default_opt;
+non terminal  entrada, salida, lista_salida, item_salida;
+non terminal  declaracion, declaracion_local, declaracion_array;
+non terminal  declaracion_num, declaracion_scalar, declaracion_num_resto, declaracion_scalar_resto;
+non terminal  asignacion, asignacion_array;
+non terminal  expresion;
+non terminal  expr_logica, expr_conjuncion, expr_negacion;
+non terminal  resto_disyuncion, resto_conjuncion;
+non terminal  comparacion;
+non terminal  expr_igual, expr_n_igual, expr_menor, expr_menor_igual, expr_mayor, expr_mayor_igual;
+non terminal  expr_aritmetica, resto_expresion;
+non terminal  termino, resto_termino;
+non terminal  potencia, resto_potencia;
+non terminal  factor;
+non terminal  unario, atomo_bool;
+non terminal  operando_igualdad, operando_menor, operando_menor_igual, operando_mayor, operando_mayor_igual;
+non terminal  llamada_funcion, argumentos;
+non terminal  parametros, parametro;
+non terminal  tipo, tipoNumero, numero, literal_caso;
+non terminal  dimensiones, acceso_array;
+non terminal  filas_init, fila_init, lista_valores;
+
+/* ===== PRECEDENCIA Y ASOCIATIVIDAD ===== */
+precedence left OR;
+precedence left AND;
+precedence left EQUAL, N_EQUAL;
+precedence left LESS_T, LESS_TE, GREATER_T, GREATER_TE;
+precedence left PLUS, MINUS;
+precedence left MULT, DIV, MOD;
+precedence left POW;
+precedence left NOT, INC, DEC;
+
+/* ===== START ===== */
+start with programa;
+
+/* ===== PRODUCCIONES ===== */
+
+programa ::= funciones main_proc
+           ;
+
+funciones ::= funciones funcion
+            | /* vacío */
+            ;
+
+funcion ::= tipo_retorno SEP ID PAR_I parametros PAR_D bloque
+          ;
+
+parametros ::= parametros COMMA parametro
+             | parametro
+             | /* vacío */
+             ;
+
+parametro ::= tipo SEP ID
+            ;
+
+main_proc ::= EMPTY SEP MAIN PAR_I PAR_D bloque
+            ;
+
+bloque ::= LLAVE_I sentencias LLAVE_D
+         ;
+
+sentencias ::= sentencias sentencia
+             | /* vacío */
+             ;
+
+sentencia ::= declaracion
+            | asignacion
+            | expresion PYC
+            ;
+
+declaracion ::= tipo SEP ID PYC
+              | tipo SEP ID ASSIGN expresion PYC
+              ;
+
+asignacion ::= ID ASSIGN expresion PYC
+             ;
+
+expresion ::= ID
+            | NUM
+            | FRAC_LIT
+            | EXPINT_LIT
+            | PAR_I expresion PAR_D
+            ;
+
+tipo_retorno ::= tipo
+               ;
+
+tipo ::= INT
+       | FLOAT
+       | CHAR
+       | STRING
+       | BOOL
+       | EXPINT_KW
+       | FRAC_KW
+       ;
