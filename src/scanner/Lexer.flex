@@ -110,3 +110,9 @@ BlockComment = "{-"([^\-]|-+[^}])*"-}"
 {LineComment} { }
 {BlockComment} { }
 
+. {
+    System.err.println("ERROR LEXICO -> Línea " + (yyline+1) +
+        ", Columna " + yycolumn +
+        ", Caracter: '" + yytext() + "'");
+    return new Symbol(sym.LEX_ERROR, yyline, yycolumn, yytext());
+}

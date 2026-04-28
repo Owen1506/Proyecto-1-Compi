@@ -1,0 +1,4 @@
+empty ~ __main__<||>
+|:
+    return ~ f<| op1 ^ 34e56 + 2/45, equal<|op1+-0.5, op2|> @ op2 # $id|>!
+:|

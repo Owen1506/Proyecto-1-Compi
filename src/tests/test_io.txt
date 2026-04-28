@@ -1,0 +1,6 @@
+int __main__ <| |> |:
+int ~ x !
+cin ~ x !
+int ~ y <- 10 !
+cout ~ y , "resultado" !
+:|

@@ -1,0 +1,6 @@
+int __main__ <| |> |:
+int ~ i <- 0 !
+do ~ |:
+i <- i + 1 !
+:| while ~ <| less_t<| i , 5 |> |> !
+:|

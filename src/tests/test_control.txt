@@ -1,0 +1,19 @@
+int __main__ <| |> |:
+  int ~ x!
+  float ~ y!
+  x<-5!
+  y<-3!
+  
+  if ~ <| equal<|x, 5|> |> |:
+    int ~ z!
+    z<-10!
+  :|
+  
+  int ~ a!
+  a<-1!
+  do ~ |:
+    a<-a!
+  :| while ~ <| less_t<|a, 10|> |> !
+  
+  break!
+:|

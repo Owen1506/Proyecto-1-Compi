@@ -1,0 +1,33 @@
+int ~ fibonacci <| ~n |> |:
+  if ~ <| equal<|n, 0|> |> |:
+    return ~ 0!
+  :|
+  int ~ a! a<-1!
+  int ~ b! b<-1!
+  int ~ i! i<-2!
+  do ~ |:
+    int ~ temp! temp<-a!
+    a<-b!
+    b<-temp!
+    i<-i!
+  :| while ~ <| less_t<|i, n|> |> !
+  return ~ b!
+:|
+
+int __main__ <| |> |:
+  int ~ x! x<-10!
+  
+  if ~ <| greater_t<|x, 5|> |> |:
+    int ~ y! y<-20!
+  :| else ~ |:
+    int ~ y! y<-0!
+  :|
+  
+  int ~ count! count<-0!
+  do ~ |:
+    cout ~ count!
+    count<-count!
+  :| while ~ <| less_t<|count, 5|> |> !
+  
+  break!
+:|

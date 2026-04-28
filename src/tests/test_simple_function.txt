@@ -1,0 +1,7 @@
+int ~ suma <| |> |:
+  int ~ a! a<-5!
+:|
+
+empty~__main__ <| |> |:
+  int ~ x! x<-10!
+:|

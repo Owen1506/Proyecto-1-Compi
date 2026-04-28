@@ -1,0 +1,17 @@
+int ~ sumar <| ~x, ~y |> |: int ~ resultado! resultado<-x!|:
+
+int __main__ <| |> |:
+  int ~ a! a<-5!
+  int ~ b! b<-3!
+  int ~ c!
+  
+  if ~ <| equal<|a, 5|> |> |:
+    cout ~ c!
+  :|
+  
+  do ~ |:
+    a<-a!
+  :| while ~ <| less_t<|a, 10|> |> !
+  
+  break!
+:|

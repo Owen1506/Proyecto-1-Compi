@@ -1,0 +1,11 @@
+empty~__main__ <| |> |:
+int ~ a <- 5 !
+int ~ b <- 3 !
+int ~ c <- a @ b !
+int ~ d <- a # b !
+int ~ e <- $ a !
+int ~ f <- a + b !
+int ~ g <- a * b ^ 2 !
+int ~ h <- equal<| a , b |> !
+int ~ i <- less_t<| a , b |> !
+:|

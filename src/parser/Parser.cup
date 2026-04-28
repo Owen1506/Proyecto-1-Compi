@@ -1,20 +1,54 @@
 package parser;
+/**
+ * OBJETIVO: Ejecutar el análisis sintáctico evaluando secuencialmente el flujo de tokens contra la gramática LALR (BNF) definida en el proyecto.
+ * ENTRADAS: Secuencia de tokens (`Symbol`) generados y devueltos uno a uno por el analizador léxico.
+ * SALIDAS: Valididad del flujo de tokens; de lo contrario, una lista de errores con coordenadas exactas mediante el modo pánico.
+ * RESTRICCIONES: El parser no debe frenar el flujo en el primer error encontrado (salvo que sea un Fatal), y se apoya en producciones 'error'.
+ */
 import scanner.*;
 import java_cup.runtime.*;
 import java.util.*;
 
 parser code {:
+    private static final List<String> SYNTAX_ERRORS = new ArrayList<>();
+
+    public static void resetSyntaxErrors() {
+        SYNTAX_ERRORS.clear();
+    }
+
+    public static List<String> getSyntaxErrors() {
+        return new ArrayList<>(SYNTAX_ERRORS);
+    }
     public static void main(String[] args) throws Exception {
         Lexer lexer = new Lexer(new java.io.InputStreamReader(System.in));
-
-        Symbol token;
-        while ((token = lexer.next_token()).sym != sym.EOF) {
-            System.out.println("Token: " + sym.terminalNames[token.sym] + " -> " + token.value);
+        parser p = new parser(lexer);
+        try {
+            Object result = p.parse();
+            System.out.println("Sintaxis correcta");
+        } catch (Exception e) {
+            System.out.println("Error sintáctico: " + e.getMessage());
         }
+    }
+    @Override
+    public void report_error(String message, Object info) {
+        String formatted;
+        if (info instanceof Symbol) {
+            Symbol symbol = (Symbol) info;
+            formatted = "Error sintáctico en línea " + symbol.left + ": " + message;
+        } else {
+            formatted = "Error sintáctico: " + message;
+        }
+        SYNTAX_ERRORS.add(formatted);
+        System.err.println(formatted);
+    }
+    @Override
+    public void syntax_error(Symbol cur_token) {
+        report_error("token inesperado '" + cur_token.value + "'", cur_token);
     }
 :};
 
 /* ===== TERMINALES ===== */
+terminal LEX_ERROR;
 
 /* tipos */
 terminal INT, FLOAT, CHAR, STRING, BOOL, EMPTY, EXPINT_KW, FRAC_KW;
@@ -82,17 +116,32 @@ precedence left NOT, INC, DEC;
 /* ===== START ===== */
 start with programa;
 
+
 /* ===== PRODUCCIONES ===== */
 
+/* PROGRAMA */
 programa ::= funciones main_proc
+           | main_proc
+           | error main_proc {: System.err.println("Error en declaración de funciones"); :}
+           | funciones error main_proc {: System.err.println("Error entre funciones y main"); :}
            ;
 
 funciones ::= funciones funcion
-            | /* vacío */
+            | funcion
             ;
 
+/* FUNCIONES */
 funcion ::= tipo_retorno SEP ID PAR_I parametros PAR_D bloque
+          | error bloque {: System.err.println("Error en definición de función"); :}
+          | tipo_retorno SEP ID PAR_I error PAR_D bloque {: System.err.println("Error en lista de parámetros"); :}
           ;
+
+tipo_retorno ::= INT
+               | FLOAT
+               | CHAR
+               | STRING
+               | BOOL
+               ;
 
 parametros ::= parametros COMMA parametro
              | parametro
@@ -100,12 +149,18 @@ parametros ::= parametros COMMA parametro
              ;
 
 parametro ::= tipo SEP ID
+            | error {: System.err.println("Error en parámetro de función"); :}
             ;
 
-main_proc ::= EMPTY SEP MAIN PAR_I PAR_D bloque
+/* MAIN */
+main_proc ::= EMPTY SEP MAIN PAR_I PAR_D bloque 
+            | error bloque {: System.err.println("Error en procedimiento main"); :}
             ;
 
+/* BLOQUE */
 bloque ::= LLAVE_I sentencias LLAVE_D
+         | LLAVE_I error LLAVE_D {: System.err.println("Error en bloque de sentencias"); :}
+         | LLAVE_I sentencias error {: System.err.println("Error en cierre de bloque"); :}
          ;
 
 sentencias ::= sentencias sentencia
@@ -114,26 +169,290 @@ sentencias ::= sentencias sentencia
 
 sentencia ::= declaracion
             | asignacion
+            | asignacion_array
+            | condicional
+            | bucle
+            | multi_choice
+            | BREAK PYC
+            | BREAK error {: System.err.println("Error en sentencia break"); :}
+            | RETURN SEP expresion PYC
+            | RETURN SEP expresion error {: System.err.println("Error: faltó fin de sentencia en return"); :}
+            | RETURN SEP expresion error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en return antes de cerrar bloque"); :}
+            | RETURN SEP error PYC {: System.err.println("Error en expresión de return"); :}
+            | entrada PYC
+            | entrada error {: System.err.println("Error: faltó fin de sentencia en cin"); :}
+            | entrada error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en cin antes de cerrar bloque"); :}
+            | salida PYC
+            | salida error {: System.err.println("Error: faltó fin de sentencia en cout"); :}
+            | salida error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en cout antes de cerrar bloque"); :}
             | expresion PYC
+            | expresion error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en expresión antes de cerrar bloque"); :}
+            | error PYC {: System.err.println("Error en sentencia"); :}
+            | error LLAVE_D {: System.err.println("Error en sentencia antes del cierre de bloque"); :}
             ;
 
-declaracion ::= tipo SEP ID PYC
-              | tipo SEP ID ASSIGN expresion PYC
+/* DECLARACIONES */
+declaracion ::= declaracion_num
+              | declaracion_scalar
               ;
 
-asignacion ::= ID ASSIGN expresion PYC
+declaracion_num ::= INT SEP ID declaracion_num_resto
+                  | FLOAT SEP ID declaracion_num_resto
+                  | error PYC {: System.err.println("Error en declaración numérica"); :}
+                  ;
+
+declaracion_num_resto ::= PYC
+                       | ASSIGN expresion PYC
+                       | ARR_I NUM COMMA NUM ARR_D PYC
+                       | ARR_I NUM COMMA NUM ARR_D ASSIGN LLAVE_I filas_init LLAVE_D PYC
+                       | error PYC {: System.err.println("Error en declaración numérica"); :}
+                       ;
+
+declaracion_scalar ::= CHAR SEP ID declaracion_scalar_resto
+                     | STRING SEP ID declaracion_scalar_resto
+                     | BOOL SEP ID declaracion_scalar_resto
+                     | EXPINT_KW SEP ID declaracion_scalar_resto
+                     | FRAC_KW SEP ID declaracion_scalar_resto
+                     | error PYC {: System.err.println("Error en declaración escalar"); :}
+                     ;
+
+declaracion_scalar_resto ::= PYC
+                          | ASSIGN expresion PYC
+                          | error PYC {: System.err.println("Error en declaración escalar"); :}
+                          ;
+
+dimensiones ::= ARR_I NUM COMMA NUM ARR_D;
+
+filas_init ::= filas_init COMMA fila_init
+             | fila_init
+           | error LLAVE_D {: System.err.println("Error en filas de inicialización de arreglo"); :}
              ;
 
-expresion ::= ID
-            | NUM
-            | FRAC_LIT
-            | EXPINT_LIT
-            | PAR_I expresion PAR_D
-            ;
+fila_init ::= LLAVE_I lista_valores LLAVE_D
+         | LLAVE_I error LLAVE_D {: System.err.println("Error en fila de inicialización de arreglo"); :}
+         ;
 
-tipo_retorno ::= tipo
+lista_valores ::= lista_valores COMMA expr_aritmetica
+                | expr_aritmetica
+             | error COMMA expr_aritmetica {: System.err.println("Error en valor de lista de arreglo"); :}
+                ;
+
+/* ASIGNACIONES */
+asignacion ::= ID ASSIGN expresion PYC
+             | error expresion PYC {: System.err.println("Error en asignación"); :}
+             | ID ASSIGN error PYC {: System.err.println("Error en expresión de asignación"); :}
+             ;
+
+asignacion_array ::= acceso_array ASSIGN expr_aritmetica PYC
+                   | acceso_array ASSIGN error PYC {: System.err.println("Error en asignación de arreglo"); :}
+                   ;
+
+acceso_array ::= ID ARR_I expr_aritmetica COMMA expr_aritmetica ARR_D
+               | ID ARR_I error ARR_D {: System.err.println("Error en acceso a arreglo"); :}
                ;
 
+
+/* CONDICIONALES */
+condicional ::= IF SEP PAR_I expresion PAR_D bloque
+              | IF SEP PAR_I expresion PAR_D bloque ELSE SEP bloque
+              | IF error bloque {: System.err.println("Error en estructura if"); :}
+              | IF SEP PAR_I error PAR_D bloque {: System.err.println("Error en condición de if"); :}
+              ;
+
+/* BUCLES */
+bucle ::= DO SEP bloque WHILE SEP PAR_I expresion PAR_D PYC
+        | DO error WHILE {: System.err.println("Error en bucle do-while"); :}
+    | DO SEP bloque WHILE SEP PAR_I error PAR_D PYC {: System.err.println("Error en condición de do-while"); :}
+        ;
+
+/* MULTI-CHOICE / SWITCH */
+multi_choice ::= SWITCH SEP PAR_I expresion PAR_D LLAVE_I lista_casos default_opt LLAVE_D
+               | SWITCH error LLAVE_I {: System.err.println("Error en estructura switch"); :}
+               | SWITCH SEP PAR_I error PAR_D LLAVE_I lista_casos default_opt LLAVE_D {: System.err.println("Error en expresión switch"); :}
+               ;
+
+lista_casos ::= lista_casos caso
+              | caso
+              ;
+
+caso ::= CASE SEP literal_caso DOSPUNTOS sentencias
+       | error sentencias {: System.err.println("Error en caso de switch"); :}
+    | CASE SEP error DOSPUNTOS sentencias {: System.err.println("Error en literal de case"); :}
+       ;
+
+default_opt ::= DEFAULT SEP DOSPUNTOS sentencias
+              | /* vacío */
+              | DEFAULT error sentencias {: System.err.println("Error en default de switch"); :}
+              ;
+
+literal_caso ::= NUM
+               | CHAR_LIT
+               | TRUE
+               | FALSE
+               ;
+
+/* ENTRADA/SALIDA */
+entrada ::= CIN SEP ID
+          | CIN SEP acceso_array
+          | error {: System.err.println("Error en entrada (cin)"); :}
+          | CIN SEP error {: System.err.println("Error en destino de lectura"); :}
+          ;
+
+salida ::= COUT SEP lista_salida
+         | error {: System.err.println("Error en salida (cout)"); :}
+         | COUT SEP error {: System.err.println("Error en lista de salida"); :}
+         ;
+
+lista_salida ::= lista_salida COMMA item_salida
+               | item_salida
+               ;
+
+item_salida ::= expresion
+              | STRING_LIT
+              | CHAR_LIT
+              ;
+
+/* ===== EXPRESIONES - ESTRUCTURA JERÁRQUICA ===== */
+
+/* Nivel 1: Expresión (puede ser lógica, carácter o string) */
+expresion ::= expr_logica
+            | CHAR_LIT
+            | STRING_LIT
+            ;
+
+/* Nivel 2: Expresión lógica (disyunción) */
+expr_logica ::= expr_conjuncion resto_disyuncion
+              ;
+
+resto_disyuncion ::= OR expr_conjuncion resto_disyuncion
+                   | /* vacío */
+                   ;
+
+/* Nivel 3: Expresión de conjunción */
+expr_conjuncion ::= expr_negacion resto_conjuncion
+                  ;
+
+resto_conjuncion ::= AND expr_negacion resto_conjuncion
+                   | /* vacío */
+                   ;
+
+/* Nivel 4: Expresión de negación */
+expr_negacion ::= NOT expr_negacion
+                | comparacion
+                | error {: System.err.println("Error en expresión lógica"); :}
+                ;
+
+/* Nivel 5: Comparación (relacionales) */
+comparacion ::= expr_igual
+              | expr_n_igual
+              | expr_menor
+              | expr_menor_igual
+              | expr_mayor
+              | expr_mayor_igual
+              | expr_aritmetica
+              | atomo_bool
+              ;
+
+/* Comparaciones específicas */
+expr_igual ::= EQUAL PAR_I operando_igualdad COMMA operando_igualdad PAR_D;
+
+expr_n_igual ::= N_EQUAL PAR_I operando_igualdad COMMA operando_igualdad PAR_D;
+
+expr_menor ::= LESS_T PAR_I operando_menor COMMA operando_menor PAR_D;
+
+expr_menor_igual ::= LESS_TE PAR_I operando_menor_igual COMMA operando_menor_igual PAR_D;
+
+expr_mayor ::= GREATER_T PAR_I operando_mayor COMMA operando_mayor PAR_D;
+
+expr_mayor_igual ::= GREATER_TE PAR_I operando_mayor_igual COMMA operando_mayor_igual PAR_D;
+
+/* Operandos tipados para comparaciones */
+operando_igualdad ::= expr_aritmetica
+                    | atomo_bool
+                    ;
+
+operando_menor ::= expr_aritmetica;
+
+operando_menor_igual ::= expr_aritmetica;
+
+operando_mayor ::= expr_aritmetica;
+
+operando_mayor_igual ::= expr_aritmetica;
+
+/* Nivel 6: Expresión aritmética (suma y resta) */
+expr_aritmetica ::= termino resto_expresion
+                  ;
+
+resto_expresion ::= PLUS termino resto_expresion
+                 | MINUS termino resto_expresion
+                 | /* vacío */
+                 | error {: System.err.println("Error en suma/resta"); :}
+                 ;
+
+/* Nivel 7: Término (multiplicación, división, módulo) */
+termino ::= potencia resto_termino
+          ;
+
+resto_termino ::= MULT potencia resto_termino
+               | DIV potencia resto_termino
+               | MOD potencia resto_termino
+               | /* vacío */
+               | error {: System.err.println("Error en multiplicación/división/módulo"); :}
+               ;
+
+/* Nivel 8: Potencia (exponenciación) */
+potencia ::= factor resto_potencia
+           ;
+
+resto_potencia ::= POW factor resto_potencia
+                | /* vacío */
+                | error {: System.err.println("Error en potencia"); :}
+                ;
+
+/* Nivel 9: Factor (unarios, literales, identificadores, llamadas) */
+factor ::= unario
+         | numero
+         | ID
+         | STRING_LIT
+         | CHAR_LIT
+         | acceso_array
+         | llamada_funcion
+         | PAR_I expresion PAR_D
+         ;
+
+/* Unarios */
+unario ::= MINUS numero
+         | INC ID
+         | DEC ID
+         | MINUS error {: System.err.println("Error en operador unario"); :}
+         ;
+
+/* Números */
+numero ::= NUM
+         | FRAC_LIT
+         | EXPINT_LIT
+         ;
+
+/* Átomo booleano */
+atomo_bool ::= TRUE
+             | FALSE
+             | llamada_funcion
+             | PAR_I expr_logica PAR_D
+             ;
+
+/* LLAMADA A FUNCIÓN */
+llamada_funcion ::= ID PAR_I argumentos PAR_D
+               | ID PAR_I error PAR_D {: System.err.println("Error en llamada a función"); :}
+               ;
+
+argumentos ::= argumentos COMMA expresion
+             | expresion
+           | /* vacío */
+           | error PAR_D {: System.err.println("Error en argumentos de función"); :}
+           | argumentos COMMA error {: System.err.println("Error en argumento de función"); :}
+             ;
+
+/* TIPO */
 tipo ::= INT
        | FLOAT
        | CHAR
@@ -142,3 +461,5 @@ tipo ::= INT
        | EXPINT_KW
        | FRAC_KW
        ;
+
+
