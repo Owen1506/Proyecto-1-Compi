@@ -9,11 +9,4 @@ SCOPE: 1
 ------------------------------------------------------
 NOMBRE     TIPO       CATEGORIA    LIN    COL   
 ------------------------------------------------------
-resultado  int        variable     3      8     
-
-SCOPE: 2
-------------------------------------------------------
-NOMBRE     TIPO       CATEGORIA    LIN    COL   
-------------------------------------------------------
-x          int        variable     13     8     
-f          int        variable     14     8     
+x          int        variable     2      6     
