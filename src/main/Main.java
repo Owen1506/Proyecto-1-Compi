@@ -29,21 +29,34 @@ public class Main {
             System.out.println("Archivo de entrada: " + sourceFile);
             
             try {
-                p.parse(); // SOLO UNA VEZ
+                try {
+                    p.parse(); // SOLO UNA VEZ
+                } catch (Exception e) {
+                    System.err.println("\n Error durante el análisis: " + e.getMessage());
+                }
+
+                // Siempre exportar tokens y tablas aunque haya habido errores
                 lexer.exportarTokens("tokens.txt");
-                System.out.println("\n Análisis completado exitosamente");
-                System.out.println(" El archivo respeta la gramática");
-                
+
+                // Exportar errores sintácticos detectados por el parser
+                try (java.io.PrintWriter se = new java.io.PrintWriter(new java.io.FileWriter("syntax_errors.txt"))) {
+                    for (String sErr : parser.getSyntaxErrors()) {
+                        se.println(sErr);
+                    }
+                } catch (Exception e) {
+                    System.err.println("No se pudo exportar syntax_errors.txt: " + e.getMessage());
+                }
+
                 System.out.println("\n=== TABLA DE SIMBOLOS ===");
                 p.getTabla().imprimirHistorial();
                 p.getTabla().exportarTXT("tabla_simbolos.txt");
-                
-            } catch (Exception e) {
-                System.err.println("\n Error durante el análisis: " + e.getMessage());
-                System.exit(1);
+
+                // Exportar errores semánticos (redeclaraciones, etc.)
+                p.getTabla().exportErrors("semantic_errors.txt");
+
+            } finally {
+                try { fileReader.close(); } catch (Exception ex) {}
             }
-            
-            fileReader.close();
             
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());

@@ -11,11 +11,13 @@ public class TablaManagement {
 
     Stack<Tabla> pilaScopes;
     List<Simbolo> historial;   
+    List<String> semanticErrors;
     int contadorScopes = 0;
 
     public TablaManagement() {
         pilaScopes = new Stack<>();
         historial = new ArrayList<>();
+        semanticErrors = new ArrayList<>();
         pilaScopes.push(new Tabla(contadorScopes++));
     }
 
@@ -34,7 +36,9 @@ public class TablaManagement {
         Tabla actual = pilaScopes.peek();
 
         if (actual.existe(s.nombre)) {
-            System.out.println("Error: variable " + s.nombre + " ya declarada en este scope");
+            String msg = "Error semántico: variable " + s.nombre + " ya declarada en este scope";
+            semanticErrors.add(msg);
+            System.err.println(msg);
             return false;
         }
 
@@ -42,6 +46,21 @@ public class TablaManagement {
         historial.add(s); 
 
         return true;
+    }
+
+    public List<String> getSemanticErrors() {
+        return new ArrayList<>(semanticErrors);
+    }
+
+    public void exportErrors(String ruta) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(ruta))) {
+            for (String e : semanticErrors) {
+                writer.println(e);
+            }
+            System.out.println("Errores semánticos exportados correctamente a: " + ruta);
+        } catch (IOException e) {
+            System.err.println("Error al exportar errores semánticos: " + e.getMessage());
+        }
     }
 
     public Simbolo buscarSimbolo(String nombre) {
