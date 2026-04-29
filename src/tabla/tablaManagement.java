@@ -1,86 +1,26 @@
 package tabla;
 
-import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Stack;
 import java.util.List;
+import java.util.Map;
 import java.io.*;
 
-class Simbolo {
-    String nombre;
-    String tipo;
-    String categoria;
-    int linea;
-    int columna;
-    int scope;
-
-    Simbolo(String nombre, String tipo, String categoria, int linea, int columna, int scope) {
-        this.nombre = nombre;
-        this.tipo = tipo;
-        this.categoria = categoria;
-        this.linea = linea;
-        this.columna = columna;
-        this.scope = scope;
-    }
-
-    public String toString() {
-        return "Simbolo{" +
-                "nombre=" + nombre +
-                ", tipo=" + tipo +
-                ", categoria=" + categoria +
-                ", linea=" + linea +
-                ", columna=" + columna +
-                ", scope=" + scope +
-                "}";
-    }
-}
-
-class Tabla {
-    Map<String, Simbolo> simbolos;
-    int idScope;
-
-    Tabla(int idScope) {
-        this.idScope = idScope;
-        this.simbolos = new HashMap<>();
-    }
-
-    void insertar(Simbolo s) {
-        simbolos.put(s.nombre, s);
-    }
-
-    boolean existe(String nombre) {
-        return simbolos.containsKey(nombre);
-    }
-
-    Simbolo obtener(String nombre) {
-        return simbolos.get(nombre);
-    }
-
-    int getIdScope() {
-        return idScope;
-    }
-
-    void imprimir() {
-        for (Simbolo s : simbolos.values()) {
-            System.out.println(s);
-        }
-    }
-}
-
-class TablaManagement {
+public class TablaManagement {
 
     Stack<Tabla> pilaScopes;
     List<Simbolo> historial;   
     int contadorScopes = 0;
 
-    TablaManagement() {
+    public TablaManagement() {
         pilaScopes = new Stack<>();
         historial = new ArrayList<>();
         pilaScopes.push(new Tabla(contadorScopes++));
     }
 
     public void entrarScope() {
+        System.out.println("Entrando en scope");
         pilaScopes.push(new Tabla(contadorScopes++));
     }
 
@@ -131,18 +71,54 @@ class TablaManagement {
 
    
     public void imprimirHistorial() {
-        System.out.println("\n=== HISTORIAL COMPLETO ===");
+        Map<Integer, List<Simbolo>> porScope = new HashMap<>();
+
         for (Simbolo s : historial) {
-            System.out.println(s);
+            porScope
+                .computeIfAbsent(s.scope, k -> new ArrayList<>())
+                .add(s);
+        }
+
+        for (Integer scope : porScope.keySet()) {
+            System.out.println("\n--- SCOPE " + scope + " ---");
+            for (Simbolo s : porScope.get(scope)) {
+                System.out.println(s);
+            }
         }
     }
 
     public void exportarTXT(String ruta) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(ruta))) {
+
+            Map<Integer, List<Simbolo>> porScope = new HashMap<>();
+
+            // agrupar por scope
             for (Simbolo s : historial) {
-                writer.println(s);
+                porScope
+                    .computeIfAbsent(s.scope, k -> new ArrayList<>())
+                    .add(s);
             }
+
+            for (Integer scope : porScope.keySet()) {
+
+                writer.println("\nSCOPE: " + scope);
+                writer.println("------------------------------------------------------");
+                writer.printf("%-10s %-10s %-12s %-6s %-6s%n",
+                        "NOMBRE", "TIPO", "CATEGORIA", "LIN", "COL");
+                writer.println("------------------------------------------------------");
+
+                for (Simbolo s : porScope.get(scope)) {
+                    writer.printf("%-10s %-10s %-12s %-6d %-6d%n",
+                            s.nombre,
+                            s.tipo,
+                            s.categoria,
+                            s.linea,
+                            s.columna);
+                }
+            }
+            
             System.out.println("Tabla exportada correctamente a: " + ruta);
+
         } catch (IOException e) {
             System.out.println("Error al exportar: " + e.getMessage());
         }
