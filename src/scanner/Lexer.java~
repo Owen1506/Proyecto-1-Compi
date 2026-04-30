@@ -497,6 +497,25 @@ public void exportarTokens(String ruta, tabla.TablaManagement tablaManager) {
     }
 }
 
+public void exportarErroresLexicos(String ruta) {
+    try (PrintWriter writer = new PrintWriter(new FileWriter(ruta))) {
+        boolean hayErrores = false;
+        for (TokenInfo t : tokenLog) {
+            if (t.token.equals("LEX_ERROR")) {
+                writer.printf("ERROR LEXICO -> Linea %d, Columna %d, Caracter: '%s'%n", 
+                        t.linea, t.columna, t.lexema);
+                hayErrores = true;
+            }
+        }
+        if (!hayErrores) {
+            writer.println("No se detectaron errores léxicos.");
+        }
+        System.out.println("Errores léxicos exportados a: " + ruta);
+    } catch (IOException e) {
+        System.err.println("Error al exportar errores léxicos: " + e.getMessage());
+    }
+}
+
 public int getCurrentLine() {
     return yyline + 1;
 }

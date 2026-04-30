@@ -206,4 +206,4 @@
 
 <main>     ::= "__main__"
 <empty>    ::= "empty"
-<funcMain> ::= <main> <separador> <empty> <parentesis_izq> <parentesis_der> <bloque>
+<funcMain> ::= <empty> <separador> <main> <parentesis_izq> <parentesis_der> <bloque>

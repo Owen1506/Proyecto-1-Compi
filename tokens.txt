@@ -1,17 +1,77 @@
            LISTA DE TOKENS            
 TOKEN        LEXEMA          LINEA    COL      SCOPE/INFO     
-EMPTY        -               1        0        N/A            
-SEP          -               1        6        N/A            
-MAIN         __main__        1        8        Scope 0        
-PAR_I        -               1        17       N/A            
+INT          -               1        0        N/A            
+SEP          -               1        3        N/A            
+ID           factorial       1        4        Scope 0        
+PAR_I        -               1        13       N/A            
+INT          -               1        15       N/A            
+SEP          -               1        18       N/A            
+ID           n               1        19       Scope 1        
 PAR_D        -               1        20       N/A            
-LLAVE_I      -               1        23       N/A            
-INT          -               2        2        N/A            
-SEP          -               2        6        N/A            
-ID           x               2        8        Scope 1        
-ASSIGN       -               2        10       N/A            
-NUM          10              2        13       N/A            
-PYC          -               2        16       N/A            
-LEX_ERROR    ¿               3        2        N/A            
-LEX_ERROR    ?               3        4        N/A            
-LLAVE_D      -               4        0        N/A            
+LLAVE_I      -               2        0        N/A            
+INT          -               3        4        N/A            
+SEP          -               3        7        N/A            
+ID           resultado       3        8        Scope 1        
+ASSIGN       -               3        17       N/A            
+NUM          1               3        19       N/A            
+PYC          -               3        20       N/A            
+DO           -               4        4        N/A            
+SEP          -               4        6        N/A            
+LLAVE_I      -               4        7        N/A            
+ID           resultado       5        8        Scope 1        
+ASSIGN       -               5        17       N/A            
+ID           resultado       5        19       Scope 1        
+MULT         -               5        28       N/A            
+ID           n               5        29       Scope 1        
+PYC          -               5        30       N/A            
+ID           n               6        8        Scope 1        
+ASSIGN       -               6        9        N/A            
+ID           n               6        11       Scope 1        
+MINUS        -               6        12       N/A            
+NUM          1               6        13       N/A            
+PYC          -               6        14       N/A            
+LLAVE_D      -               7        4        N/A            
+WHILE        -               7        6        N/A            
+SEP          -               7        11       N/A            
+PAR_I        -               7        12       N/A            
+GREATER_T    -               7        14       N/A            
+PAR_I        -               7        24       N/A            
+ID           n               7        26       Scope 1        
+COMMA        -               7        27       N/A            
+NUM          0               7        28       N/A            
+PAR_D        -               7        29       N/A            
+PAR_D        -               7        31       N/A            
+PYC          -               7        33       N/A            
+RETURN       -               8        4        N/A            
+SEP          -               8        10       N/A            
+ID           resultado       8        11       Scope 1        
+PYC          -               8        20       N/A            
+LLAVE_D      -               9        0        N/A            
+EMPTY        -               11       0        N/A            
+SEP          -               11       5        N/A            
+MAIN         __main__        11       6        Scope 0        
+PAR_I        -               11       14       N/A            
+PAR_D        -               11       16       N/A            
+LLAVE_I      -               12       0        N/A            
+INT          -               13       4        N/A            
+SEP          -               13       7        N/A            
+ID           x               13       8        Scope 3        
+ASSIGN       -               13       9        N/A            
+NUM          5               13       11       N/A            
+PYC          -               13       12       N/A            
+INT          -               14       4        N/A            
+SEP          -               14       7        N/A            
+ID           f               14       8        Scope 3        
+ASSIGN       -               14       9        N/A            
+ID           factorial       14       11       Scope 0        
+PAR_I        -               14       20       N/A            
+ID           x               14       22       Scope 3        
+PAR_D        -               14       23       N/A            
+PYC          -               14       25       N/A            
+COUT         -               15       4        N/A            
+SEP          -               15       8        N/A            
+STRING_LIT   El factorial es  15       9        N/A            
+COMMA        -               15       27       N/A            
+ID           f               15       28       Scope 3        
+PYC          -               15       29       N/A            
+LLAVE_D      -               16       0        N/A            

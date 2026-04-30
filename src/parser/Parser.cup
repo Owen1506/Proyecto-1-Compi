@@ -47,18 +47,14 @@ parser code {:
             Symbol symbol = (Symbol) info;
             if (symbol.left > 0) line = symbol.left;
         }
-        // If symbol doesn't provide a line, try to ask the scanner (lexer) for current position
         if (line == -1) {
             try {
                 java_cup.runtime.Scanner currentScanner = getScanner();
                 if (currentScanner instanceof scanner.Lexer) {
                     line = ((scanner.Lexer) currentScanner).getCurrentLine();
                 }
-            } catch (Exception ex) {
-                // ignore and leave line as -1
-            }
+            } catch (Exception ex) { }
         }
-
         if (line > 0) {
             formatted = "Error sintáctico en línea " + line + ": " + message;
         } else {
@@ -72,49 +68,33 @@ parser code {:
     public void syntax_error(Symbol cur_token) {
         report_error("token inesperado '" + cur_token.value + "'", cur_token);
     }
-
 :};
 
 /* ===== TERMINALES ===== */
 terminal LEX_ERROR;
 
-/* tipos */
 terminal INT, FLOAT, CHAR, STRING, BOOL, EMPTY, EXPINT_KW, FRAC_KW;
-
-/* control */
 terminal MAIN, IF, ELSE, BREAK, RETURN, CASE, DEFAULT, SWITCH, WHILE, DO;
-
-/* símbolos */
 terminal PAR_I, PAR_D, LLAVE_I, LLAVE_D;
 terminal ARR_I, ARR_D, COMMA;
 terminal PYC, ASSIGN, SEP, DOSPUNTOS;
-
-/* operadores */
 terminal PLUS, MINUS, MULT, DIV, MOD, POW;
 terminal INC, DEC;
 terminal AND, OR, NOT;
-
-/* relacionales */
 terminal EQUAL, N_EQUAL, LESS_T, LESS_TE, GREATER_T, GREATER_TE;
-
-/* valores */
 terminal TRUE, FALSE;
 terminal String ID, NUM, FRAC_LIT, EXPINT_LIT, STRING_LIT, CHAR_LIT;
-
-/* entrada y salida */
 terminal CIN, COUT;
 
 /* ===== NO TERMINALES ===== */
-/* String para propagar el tipo a través de las producciones */
 non terminal String tipo_retorno;
 non terminal String tipo;
-
 non terminal  programa, funciones, funcion;
 non terminal  main_proc, bloque, cuerpo_funcion, sentencias, sentencia;
 non terminal  condicional, bucle, multi_choice;
 non terminal  lista_casos, caso, default_opt;
 non terminal  entrada, salida, lista_salida, item_salida;
-non terminal  declaracion, declaracion_local, declaracion_array;
+non terminal  declaracion;
 non terminal  declaracion_num, declaracion_scalar, declaracion_num_resto, declaracion_scalar_resto;
 non terminal  asignacion, asignacion_array;
 non terminal  expresion;
@@ -127,10 +107,9 @@ non terminal  termino, resto_termino;
 non terminal  potencia, resto_potencia;
 non terminal  factor;
 non terminal  unario, atomo_bool;
-non terminal  operando_igualdad, operando_menor, operando_menor_igual, operando_mayor, operando_mayor_igual;
 non terminal  llamada_funcion, argumentos;
 non terminal  parametros, parametro;
-non terminal  tipoNumero, numero, literal_caso;
+non terminal  numero, literal_caso;
 non terminal  dimensiones, acceso_array;
 non terminal  filas_init, fila_init, lista_valores;
 
@@ -141,37 +120,30 @@ precedence left EQUAL, N_EQUAL;
 precedence left LESS_T, LESS_TE, GREATER_T, GREATER_TE;
 precedence left PLUS, MINUS;
 precedence left MULT, DIV, MOD;
-precedence left POW;
-precedence left NOT, INC, DEC;
+precedence right POW;
+precedence right NOT, INC, DEC;
 
 /* ===== START ===== */
 start with programa;
-
 
 /* ===== PRODUCCIONES ===== */
 
 programa ::= funciones main_proc
            | main_proc
-           | error main_proc {: System.err.println("Error en declaración de funciones"); :}
-           | funciones error main_proc {: System.err.println("Error entre funciones y main"); :}
            ;
 
 funciones ::= funciones funcion
             | funcion
             ;
 
-funcion ::= tipo_retorno:t SEP ID:id 
+funcion ::= tipo_retorno:t SEP ID:id
             {:
                 System.err.println("Reconocida función: " + id);
                 tabla.insertar(new tabla.Simbolo(id, t, "funcion", idleft, idright, tabla.getScopeActual()));
                 tabla.entrarScope();
             :}
             PAR_I parametros PAR_D cuerpo_funcion
-            {: 
-                tabla.salirScope();
-            :}
-          | error bloque {: System.err.println("Error en definición de función"); :}
-          | tipo_retorno SEP ID PAR_I error PAR_D bloque {: System.err.println("Error en lista de parámetros"); :}
+            {: tabla.salirScope(); :}
           ;
 
 tipo_retorno ::= INT    {: RESULT = "int";    :}
@@ -186,41 +158,28 @@ parametros ::= parametros COMMA parametro
              | /* vacío */
              ;
 
-/* Los parámetros se insertan en el ámbito actual que, en este punto, es el de la función */
 parametro ::= tipo:t SEP ID:id
-{:
-    tabla.insertar(new tabla.Simbolo(
-        id,
-        t,
-        "parametro",
-        idleft,
-        idright,
-        tabla.getScopeActual()
-    ));
-:}
-            | error {: System.err.println("Error en parámetro de función"); :}
+            {:
+                tabla.insertar(new tabla.Simbolo(id, t, "parametro", idleft, idright, tabla.getScopeActual()));
+            :}
             ;
 
 main_proc ::= EMPTY SEP MAIN PAR_I PAR_D 
-              {:
-                  tabla.insertar(new tabla.Simbolo("__main__", "empty", "funcion", 0, 0, tabla.getScopeActual()));
-                  tabla.entrarScope();
-              :}
+            {:
+                tabla.insertar(new tabla.Simbolo("__main__", "empty", "funcion", 0, 0, tabla.getScopeActual()));
+                tabla.entrarScope();
+            :}
               cuerpo_funcion
-              {: tabla.salirScope(); :}
-            | error cuerpo_funcion {: System.err.println("Error en procedimiento main"); :}
+            {: tabla.salirScope(); :}
             ;
 
-cuerpo_funcion ::= LLAVE_I sentencias LLAVE_D
-                 | LLAVE_I error LLAVE_D {: System.err.println("Error en cuerpo de función"); :}
-                 | LLAVE_I sentencias error LLAVE_D {: System.err.println("Error en cierre de cuerpo de función"); :}
+cuerpo_funcion ::= LLAVE_I error LLAVE_D   /* prioridad para recuperación */
+                 | LLAVE_I sentencias LLAVE_D
                  ;
 
-bloque ::= LLAVE_I {: tabla.entrarScope(); :}
-           sentencias
-           LLAVE_D {: tabla.salirScope(); :}
-         | LLAVE_I error LLAVE_D {: System.err.println("Error en bloque de sentencias"); :}
-         | LLAVE_I sentencias error {: System.err.println("Error en cierre de bloque"); :}
+bloque ::= LLAVE_I error LLAVE_D
+         | LLAVE_I 
+         {: tabla.entrarScope(); :} sentencias LLAVE_D {: tabla.salirScope(); :}
          ;
 
 sentencias ::= sentencias sentencia
@@ -234,27 +193,13 @@ sentencia ::= declaracion
             | bucle
             | multi_choice
             | BREAK PYC
-            | BREAK error {: System.err.println("Error en sentencia break"); :}
             | RETURN SEP expresion PYC
-            | RETURN SEP expresion error {: System.err.println("Error: faltó fin de sentencia en return"); :}
-            | RETURN SEP expresion error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en return antes de cerrar bloque"); :}
-            | RETURN SEP error PYC {: System.err.println("Error en expresión de return"); :}
             | entrada PYC
-            | entrada error {: System.err.println("Error: faltó fin de sentencia en cin"); :}
-            | entrada error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en cin antes de cerrar bloque"); :}
             | salida PYC
-            | salida error {: System.err.println("Error: faltó fin de sentencia en cout"); :}
-            | salida error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en cout antes de cerrar bloque"); :}
             | expresion PYC
-            | expresion error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en expresión antes de cerrar bloque"); :}
-            | error PYC {: System.err.println("Error en sentencia"); :}
-            | error LLAVE_D {: System.err.println("Error en sentencia antes del cierre de bloque"); :}
-            /* Manejar token léxico inválido devuelto por el lexer: consumirlo y reportarlo */
-                        | LEX_ERROR:lexError {: 
-                                report_error("Token léxico inválido: '" + lexError + "'", new Symbol(sym.LEX_ERROR, lexErrorleft, lexErrorright, lexError));
-                            :}
-            | LEX_ERROR:e
-  {: System.err.println("Token léxico inválido ignorado en línea " + eleft); :}
+            | LEX_ERROR:e {: report_error("Token léxico inválido: '" + e + "'", new Symbol(sym.LEX_ERROR, eleft, eright, e)); :}
+            | error PYC
+            | error LLAVE_D
             ;
 
 declaracion ::= declaracion_num
@@ -263,142 +208,78 @@ declaracion ::= declaracion_num
 
 declaracion_num ::= INT SEP ID:id declaracion_num_resto
 {:
-    tabla.insertar(new tabla.Simbolo(
-        id,
-        "int",
-        "variable",
-        idleft,
-        idright,
-        tabla.getScopeActual()
-    ));
+    tabla.insertar(new tabla.Simbolo(id, "int", "variable", idleft, idright, tabla.getScopeActual()));
 :}
                   | FLOAT SEP ID:id declaracion_num_resto
 {:
-    tabla.insertar(new tabla.Simbolo(
-        id,
-        "float",
-        "variable",
-        idleft,
-        idright,
-        tabla.getScopeActual()
-    ));
+    tabla.insertar(new tabla.Simbolo(id, "float", "variable", idleft, idright, tabla.getScopeActual()));
 :}
-                  | error PYC {: System.err.println("Error en declaración numérica"); :}
                   ;
 
 declaracion_num_resto ::= PYC
                         | ASSIGN expresion PYC
                         | ARR_I NUM ARR_D ARR_I NUM ARR_D PYC
                         | ARR_I NUM ARR_D ARR_I NUM ARR_D ASSIGN LLAVE_I filas_init LLAVE_D PYC
-                        | error PYC {: System.err.println("Error en declaración numérica"); :}
                         ;
 
 declaracion_scalar ::= CHAR SEP ID:id declaracion_scalar_resto
 {:
-    tabla.insertar(new tabla.Simbolo(
-        id,
-        "char",
-        "variable",
-        idleft,
-        idright,
-        tabla.getScopeActual()
-    ));
+    tabla.insertar(new tabla.Simbolo(id, "char", "variable", idleft, idright, tabla.getScopeActual()));
 :}
                      | STRING SEP ID:id declaracion_scalar_resto
 {:
-    tabla.insertar(new tabla.Simbolo(
-        id,
-        "string",
-        "variable",
-        idleft,
-        idright,
-        tabla.getScopeActual()
-    ));
+    tabla.insertar(new tabla.Simbolo(id, "string", "variable", idleft, idright, tabla.getScopeActual()));
 :}
                      | BOOL SEP ID:id declaracion_scalar_resto
 {:
-    tabla.insertar(new tabla.Simbolo(
-        id,
-        "bool",
-        "variable",
-        idleft,
-        idright,
-        tabla.getScopeActual()
-    ));
+    tabla.insertar(new tabla.Simbolo(id, "bool", "variable", idleft, idright, tabla.getScopeActual()));
 :}
                      | EXPINT_KW SEP ID:id declaracion_scalar_resto
 {:
-    tabla.insertar(new tabla.Simbolo(
-        id,
-        "expint",
-        "variable",
-        idleft,
-        idright,
-        tabla.getScopeActual()
-    ));
+    tabla.insertar(new tabla.Simbolo(id, "expint", "variable", idleft, idright, tabla.getScopeActual()));
 :}
                      | FRAC_KW SEP ID:id declaracion_scalar_resto
 {:
-    tabla.insertar(new tabla.Simbolo(
-        id,
-        "frac",
-        "variable",
-        idleft,
-        idright,
-        tabla.getScopeActual()
-    ));
+    tabla.insertar(new tabla.Simbolo(id, "frac", "variable", idleft, idright, tabla.getScopeActual()));
 :}
-                     | error PYC {: System.err.println("Error en declaración escalar"); :}
                      ;
 
 declaracion_scalar_resto ::= PYC
                            | ASSIGN expresion PYC
-                           | error PYC {: System.err.println("Error en declaración escalar"); :}
                            ;
 
 dimensiones ::= ARR_I NUM ARR_D ARR_I NUM ARR_D;
 
 filas_init ::= filas_init COMMA fila_init
              | fila_init
-             | error LLAVE_D {: System.err.println("Error en filas de inicialización de arreglo"); :}
              ;
 
 fila_init ::= LLAVE_I lista_valores LLAVE_D
-            | LLAVE_I error LLAVE_D {: System.err.println("Error en fila de inicialización de arreglo"); :}
+            | LLAVE_I error LLAVE_D
             ;
 
 lista_valores ::= lista_valores COMMA expr_aritmetica
                 | expr_aritmetica
-                | error COMMA expr_aritmetica {: System.err.println("Error en valor de lista de arreglo"); :}
                 ;
 
 asignacion ::= ID ASSIGN expresion PYC
-             | error expresion PYC {: System.err.println("Error en asignación"); :}
-             | ID ASSIGN error PYC {: System.err.println("Error en expresión de asignación"); :}
              ;
 
 asignacion_array ::= acceso_array ASSIGN expr_aritmetica PYC
-                   | acceso_array ASSIGN error PYC {: System.err.println("Error en asignación de arreglo"); :}
                    ;
 
 acceso_array ::= ID ARR_I expr_aritmetica ARR_D ARR_I expr_aritmetica ARR_D
-               | ID ARR_I error ARR_D ARR_I error ARR_D {: System.err.println("Error en acceso a arreglo"); :}
+               | ID ARR_I error ARR_D ARR_I error ARR_D
                ;
 
 condicional ::= IF SEP PAR_I expresion PAR_D bloque
               | IF SEP PAR_I expresion PAR_D bloque ELSE SEP bloque
-              | IF error bloque {: System.err.println("Error en estructura if"); :}
-              | IF SEP PAR_I error PAR_D bloque {: System.err.println("Error en condición de if"); :}
               ;
 
 bucle ::= DO SEP bloque WHILE SEP PAR_I expresion PAR_D PYC
-        | DO error WHILE {: System.err.println("Error en bucle do-while"); :}
-        | DO SEP bloque WHILE SEP PAR_I error PAR_D PYC {: System.err.println("Error en condición de do-while"); :}
         ;
 
 multi_choice ::= SWITCH SEP PAR_I expresion PAR_D LLAVE_I lista_casos default_opt LLAVE_D
-               | SWITCH error LLAVE_I {: System.err.println("Error en estructura switch"); :}
-               | SWITCH SEP PAR_I error PAR_D LLAVE_I lista_casos default_opt LLAVE_D {: System.err.println("Error en expresión switch"); :}
                ;
 
 lista_casos ::= lista_casos caso
@@ -406,13 +287,10 @@ lista_casos ::= lista_casos caso
               ;
 
 caso ::= CASE SEP literal_caso DOSPUNTOS sentencias
-       | error sentencias {: System.err.println("Error en caso de switch"); :}
-       | CASE SEP error DOSPUNTOS sentencias {: System.err.println("Error en literal de case"); :}
        ;
 
 default_opt ::= DEFAULT SEP DOSPUNTOS sentencias
               | /* vacío */
-              | DEFAULT error sentencias {: System.err.println("Error en default de switch"); :}
               ;
 
 literal_caso ::= NUM
@@ -421,40 +299,30 @@ literal_caso ::= NUM
                | FALSE
                ;
 
-entrada ::= CIN SEP ID
-          | CIN SEP acceso_array
-          | error {: System.err.println("Error en entrada (cin)"); :}
-          | CIN SEP error {: System.err.println("Error en destino de lectura"); :}
+entrada ::= CIN SEP acceso_array
+          | CIN SEP ID
           ;
 
 salida ::= COUT SEP lista_salida
-         | error {: System.err.println("Error en salida (cout)"); :}
-         | COUT SEP error {: System.err.println("Error en lista de salida"); :}
          ;
 
 lista_salida ::= lista_salida COMMA item_salida
                | item_salida
                ;
 
-item_salida ::= expresion
-              | STRING_LIT
-              | CHAR_LIT
-              ;
+item_salida ::= expresion;
 
 expresion ::= expr_logica
-            | CHAR_LIT
             | STRING_LIT
             ;
 
-expr_logica ::= expr_conjuncion resto_disyuncion
-              ;
+expr_logica ::= expr_conjuncion resto_disyuncion;
 
 resto_disyuncion ::= OR expr_conjuncion resto_disyuncion
                    | /* vacío */
                    ;
 
-expr_conjuncion ::= expr_negacion resto_conjuncion
-                  ;
+expr_conjuncion ::= expr_negacion resto_conjuncion;
 
 resto_conjuncion ::= AND expr_negacion resto_conjuncion
                    | /* vacío */
@@ -462,7 +330,6 @@ resto_conjuncion ::= AND expr_negacion resto_conjuncion
 
 expr_negacion ::= NOT expr_negacion
                 | comparacion
-                | error {: System.err.println("Error en expresión lógica"); :}
                 ;
 
 comparacion ::= expr_igual
@@ -475,62 +342,53 @@ comparacion ::= expr_igual
               | atomo_bool
               ;
 
-expr_igual        ::= EQUAL     PAR_I operando_igualdad   COMMA operando_igualdad   PAR_D;
-expr_n_igual      ::= N_EQUAL   PAR_I operando_igualdad   COMMA operando_igualdad   PAR_D;
-expr_menor        ::= LESS_T    PAR_I operando_menor      COMMA operando_menor      PAR_D;
-expr_menor_igual  ::= LESS_TE   PAR_I operando_menor_igual COMMA operando_menor_igual PAR_D;
-expr_mayor        ::= GREATER_T PAR_I operando_mayor      COMMA operando_mayor      PAR_D;
-expr_mayor_igual  ::= GREATER_TE PAR_I operando_mayor_igual COMMA operando_mayor_igual PAR_D;
+expr_igual        ::= EQUAL PAR_I expr_aritmetica COMMA expr_aritmetica PAR_D
+                    | EQUAL PAR_I atomo_bool COMMA atomo_bool PAR_D;
+expr_n_igual      ::= N_EQUAL PAR_I expr_aritmetica COMMA expr_aritmetica PAR_D
+                    | N_EQUAL PAR_I atomo_bool COMMA atomo_bool PAR_D;
+expr_menor        ::= LESS_T PAR_I expr_aritmetica COMMA expr_aritmetica PAR_D;
+expr_menor_igual  ::= LESS_TE PAR_I expr_aritmetica COMMA expr_aritmetica PAR_D;
+expr_mayor        ::= GREATER_T PAR_I expr_aritmetica COMMA expr_aritmetica PAR_D;
+expr_mayor_igual  ::= GREATER_TE PAR_I expr_aritmetica COMMA expr_aritmetica PAR_D;
 
-operando_igualdad   ::= expr_aritmetica | atomo_bool;
-operando_menor      ::= expr_aritmetica;
-operando_menor_igual ::= expr_aritmetica;
-operando_mayor      ::= expr_aritmetica;
-operando_mayor_igual ::= expr_aritmetica;
+atomo_bool ::= TRUE
+             | FALSE
+             | PAR_I expr_logica PAR_D
+             ;
 
-expr_aritmetica ::= termino resto_expresion
-                  ;
+expr_aritmetica ::= termino resto_expresion;
 
-resto_expresion ::= PLUS  termino resto_expresion
+resto_expresion ::= PLUS termino resto_expresion
                   | MINUS termino resto_expresion
                   | /* vacío */
-                  | error {: System.err.println("Error en suma/resta"); :}
                   ;
 
-termino ::= potencia resto_termino
-          ;
+termino ::= potencia resto_termino;
 
 resto_termino ::= MULT potencia resto_termino
-                | DIV  potencia resto_termino
-                | MOD  potencia resto_termino
+                | DIV potencia resto_termino
+                | MOD potencia resto_termino
                 | /* vacío */
-                | error {: System.err.println("Error en multiplicación/división/módulo"); :}
                 ;
 
-potencia ::= factor resto_potencia
-           ;
+potencia ::= factor resto_potencia;
 
 resto_potencia ::= POW factor resto_potencia
                  | /* vacío */
-                 | error {: System.err.println("Error en potencia"); :}
                  ;
 
 factor ::= unario
          | numero
          | ID
-         | STRING_LIT
          | CHAR_LIT
          | acceso_array
-         | LEX_ERROR:e
-  {: System.err.println("Token léxico inválido en expresión, línea " + eleft); :}
          | llamada_funcion
-         | PAR_I expresion PAR_D
+         | PAR_I expr_aritmetica PAR_D
          ;
 
 unario ::= MINUS numero
          | INC ID
          | DEC ID
-         | MINUS error {: System.err.println("Error en operador unario"); :}
          ;
 
 numero ::= NUM
@@ -538,21 +396,13 @@ numero ::= NUM
          | EXPINT_LIT
          ;
 
-atomo_bool ::= TRUE
-             | FALSE
-             | llamada_funcion
-             | PAR_I expr_logica PAR_D
-             ;
-
 llamada_funcion ::= ID PAR_I argumentos PAR_D
-                  | ID PAR_I error PAR_D {: System.err.println("Error en llamada a función"); :}
+                  | ID PAR_I error PAR_D
                   ;
 
 argumentos ::= argumentos COMMA expresion
              | expresion
              | /* vacío */
-             | error PAR_D {: System.err.println("Error en argumentos de función"); :}
-             | argumentos COMMA error {: System.err.println("Error en argumento de función"); :}
              ;
 
 tipo ::= INT       {: RESULT = "int";    :}

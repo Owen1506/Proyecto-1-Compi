@@ -3,10 +3,19 @@ SCOPE: 0
 ------------------------------------------------------
 NOMBRE     TIPO       CATEGORIA    LIN    COL   
 ------------------------------------------------------
+factorial  int        funcion      1      4     
 __main__   empty      funcion      0      0     
 
 SCOPE: 1
 ------------------------------------------------------
 NOMBRE     TIPO       CATEGORIA    LIN    COL   
 ------------------------------------------------------
-x          int        variable     2      8     
+n          int        parametro    1      19    
+resultado  int        variable     3      8     
+
+SCOPE: 3
+------------------------------------------------------
+NOMBRE     TIPO       CATEGORIA    LIN    COL   
+------------------------------------------------------
+x          int        variable     13     8     
+f          int        variable     14     8     

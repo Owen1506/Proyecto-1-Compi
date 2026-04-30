@@ -1,10 +1,10 @@
 int~factorial<|int~n|>
 |:
     int~resultado<-1!
-    do|:
+    do~|:
         resultado<-resultado*n!
         n<-n-1!
-    :|while<|greather_t<|n,0|>|>!
+    :|while~<|greather_t<|n,0|>|>!
     return~resultado!
 :|
 
