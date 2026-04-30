@@ -926,21 +926,31 @@ public class parser extends java_cup.runtime.lr_parser {
 
 
 
+    // Lista estatica donde se acumulan todos los errores sintacticos encontrados.
+    // Es estatica para que pueda consultarse desde fuera sin necesitar una instancia del parser.
     private static final List<String> SYNTAX_ERRORS = new ArrayList<>();
+
+    // Tabla de simbolos que se va construyendo a medida que el parser reconoce
+    // declaraciones, funciones y parametros.
     private TablaManagement tabla = new TablaManagement();
 
+    // Permite que otras clases (como Main) accedan a la tabla de simbolos una vez terminado el analisis.
     public TablaManagement getTabla() {
         return tabla;
     }
 
+    // Vacia la lista de errores sintacticos.
     public static void resetSyntaxErrors() {
         SYNTAX_ERRORS.clear();
     }
 
+    // Retorna una copia de la lista de errores sintacticos para que no pueda modificarse desde afuera.
     public static List<String> getSyntaxErrors() {
         return new ArrayList<>(SYNTAX_ERRORS);
     }
 
+    // Punto de entrada alternativo para probar el parser directamente desde consola,
+    // leyendo el codigo fuente desde la entrada estandar.
     public static void main(String[] args) throws Exception {
         Lexer lexer = new Lexer(new java.io.InputStreamReader(System.in));
         parser p = new parser(lexer);
@@ -948,18 +958,25 @@ public class parser extends java_cup.runtime.lr_parser {
             Object result = p.parse();
             System.out.println("Sintaxis correcta");
         } catch (Exception e) {
-            System.out.println("Error sintáctico: " + e.getMessage());
+            System.out.println("Error sintactico: " + e.getMessage());
         }
     }
 
+    // Registra un error sintactico con su numero de linea cuando esta disponible.
+    // Entrada: mensaje descriptivo del error y el simbolo que lo provoco.
+    // Si no se puede obtener la linea desde el simbolo, se intenta obtenerla directamente del lexer.
     @Override
     public void report_error(String message, Object info) {
         String formatted;
         int line = -1;
+
+        // Se intenta obtener la linea desde el simbolo que causo el error.
         if (info instanceof Symbol) {
             Symbol symbol = (Symbol) info;
             if (symbol.left > 0) line = symbol.left;
         }
+
+        // Si el simbolo no tenia informacion de linea, se le pregunta directamente al lexer.
         if (line == -1) {
             try {
                 java_cup.runtime.Scanner currentScanner = getScanner();
@@ -968,15 +985,19 @@ public class parser extends java_cup.runtime.lr_parser {
                 }
             } catch (Exception ex) { }
         }
+
         if (line > 0) {
-            formatted = "Error sintáctico en línea " + line + ": " + message;
+            formatted = "Error sintactico en linea " + line + ": " + message;
         } else {
-            formatted = "Error sintáctico: " + message;
+            formatted = "Error sintactico: " + message;
         }
+
         SYNTAX_ERRORS.add(formatted);
         System.err.println(formatted);
     }
 
+    // Se llama automaticamente cuando el parser encuentra un token que no esperaba.
+    // Construye un mensaje legible con el valor del token inesperado y lo reporta.
     @Override
     public void syntax_error(Symbol cur_token) {
         report_error("token inesperado '" + cur_token.value + "'", cur_token);
@@ -1068,7 +1089,7 @@ class CUP$parser$actions {
 		int idright = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).right;
 		String id = (String)((java_cup.runtime.Symbol) CUP$parser$stack.peek()).value;
 
-                System.err.println("Reconocida función: " + id);
+                System.err.println("Reconocida funcion: " + id);
                 tabla.insertar(new tabla.Simbolo(id, t, "funcion", idleft, idright, tabla.getScopeActual()));
                 tabla.entrarScope();
             
@@ -1376,7 +1397,7 @@ class CUP$parser$actions {
 		int eleft = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).left;
 		int eright = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).right;
 		Object e = (Object)((java_cup.runtime.Symbol) CUP$parser$stack.peek()).value;
-		 report_error("Token léxico inválido: '" + e + "'", new Symbol(sym.LEX_ERROR, eleft, eright, e)); 
+		 report_error("Token lexico invalido: '" + e + "'", new Symbol(sym.LEX_ERROR, eleft, eright, e)); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("sentencia",9, ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;

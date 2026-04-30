@@ -444,6 +444,9 @@ public class Lexer implements java_cup.runtime.Scanner {
 
   /* user code: */
 
+// TokenInfo es una estructura interna para guardar la informacion
+// de cada token que se va reconociendo durante el analisis lexico.
+// Almacena el tipo de token, el texto original, y su posicion en el archivo.
 private static class TokenInfo {
     String token;
     String lexema;
@@ -456,30 +459,49 @@ private static class TokenInfo {
         this.columna = columna;
     }
 }
+
+// Lista donde se van acumulando todos los tokens reconocidos durante el analisis.
 private List<TokenInfo> tokenLog = new ArrayList<>();
+
+// Permite que otras clases consulten la lista de tokens si lo necesitan.
 public List<TokenInfo> getTokenLog() {
     return tokenLog;
 }
+
+// Registra un token que no tiene lexema relevante (como operadores o palabras reservadas).
+// Entrada: nombre del token.
 private void addToken(String token) {
     tokenLog.add(new TokenInfo(token, "-", yyline + 1, yycolumn));
 }
+
+// Registra un token junto con su lexema (como identificadores o literales).
+// Entrada: nombre del token y el texto reconocido.
 private void addToken(String token, String lexema) {
     tokenLog.add(new TokenInfo(token, lexema, yyline + 1, yycolumn));
 }
 
+// Escribe todos los tokens reconocidos en un archivo de texto con formato de tabla.
+// Para los identificadores y MAIN, consulta la tabla de simbolos para incluir el scope.
+// Entrada : ruta del archivo de salida y el manejador de la tabla de simbolos.
+// Salida  : archivo tokens.txt con la lista completa de tokens.
 public void exportarTokens(String ruta, tabla.TablaManagement tablaManager) {
     try (PrintWriter writer = new PrintWriter(new FileWriter(ruta))) {
         writer.println("           LISTA DE TOKENS            ");
         writer.printf("%-12s %-15s %-8s %-8s %-15s%n",
                 "TOKEN", "LEXEMA", "LINEA", "COL", "SCOPE/INFO");
         for (TokenInfo t : tokenLog) {
+            // Por defecto no hay informacion de scope disponible.
             String extraInfo = "N/A";
+
+            // Si el token es un identificador o MAIN, se busca en la tabla de simbolos
+            // para saber en que scope fue declarado.
             if (t.token.equals("ID") || t.token.equals("MAIN")) {
                 if (tablaManager != null) {
                     tabla.Simbolo sim = tablaManager.buscarEnHistorial(t.lexema);
                     if (sim != null) {
                         extraInfo = "Scope " + sim.getScope();
                     } else {
+                        // El identificador aparece pero aun no fue declarado formalmente.
                         extraInfo = "Scope (Pendiente)";
                     }
                 }
@@ -497,6 +519,10 @@ public void exportarTokens(String ruta, tabla.TablaManagement tablaManager) {
     }
 }
 
+// Recorre la lista de tokens buscando los que fueron marcados como errores lexicos
+// y los escribe en un archivo separado para facilitar su revision.
+// Entrada : ruta del archivo de salida.
+// Salida  : archivo con los errores lexicos encontrados, o un mensaje indicando que no hubo ninguno.
 public void exportarErroresLexicos(String ruta) {
     try (PrintWriter writer = new PrintWriter(new FileWriter(ruta))) {
         boolean hayErrores = false;
@@ -508,18 +534,22 @@ public void exportarErroresLexicos(String ruta) {
             }
         }
         if (!hayErrores) {
-            writer.println("No se detectaron errores léxicos.");
+            writer.println("No se detectaron errores lexicos.");
         }
-        System.out.println("Errores léxicos exportados a: " + ruta);
+        System.out.println("Errores lexicos exportados a: " + ruta);
     } catch (IOException e) {
-        System.err.println("Error al exportar errores léxicos: " + e.getMessage());
+        System.err.println("Error al exportar errores lexicos: " + e.getMessage());
     }
 }
 
+// Retorna el numero de linea actual donde esta leyendo el lexer.
+// Se suma 1 porque JFlex comienza a contar desde 0.
 public int getCurrentLine() {
     return yyline + 1;
 }
 
+// Retorna el numero de columna actual donde esta leyendo el lexer.
+// Se suma 1 por la misma razon que getCurrentLine.
 public int getCurrentColumn() {
     return yycolumn + 1;
 }
@@ -953,7 +983,7 @@ public int getCurrentColumn() {
         switch (zzAction < 0 ? zzAction : ZZ_ACTION[zzAction]) {
           case 1:
             { addToken("LEX_ERROR", yytext());
-    System.err.println("ERROR LEXICO -> Línea " + (yyline+1) +
+    System.err.println("ERROR LEXICO -> Linea " + (yyline+1) +
         ", Columna " + yycolumn +
         ", Caracter: '" + yytext() + "'");
     return new Symbol(sym.LEX_ERROR, yyline+1, yycolumn, yytext());
