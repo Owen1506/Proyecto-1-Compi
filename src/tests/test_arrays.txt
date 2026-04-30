@@ -1,5 +1,5 @@
-int __main__ <| |> |:
-int ~ arr << 3 , 3 >> !
-int ~ arr << 0 , 0 >> <- 5 !
-int ~ x <- arr << 1 , 1 >> !
+empty ~ __main__ <| |> |:
+int ~ arr << 3 >> << 3 >> !
+arr << 0 >> << 0 >> <- 5 !
+int ~ x <- arr << 1 >> << 1 >> !
 :|

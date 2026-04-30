@@ -1,17 +1,17 @@
            LISTA DE TOKENS            
-TOKEN        LEXEMA          LINEA    COL     
-EMPTY        -               1        0       
-SEP          -               1        5       
-MAIN         -               1        7       
-PAR_I        -               1        16      
-PAR_D        -               1        19      
-LLAVE_I      -               1        22      
-INT          -               2        0       
-SEP          -               2        4       
-ID           x               2        6       
-PYC          -               2        8       
-ID           x               3        0       
-ASSIGN       -               3        2       
-NUM          5               3        5       
-PYC          -               3        7       
-LLAVE_D      -               4        0       
+TOKEN        LEXEMA          LINEA    COL      SCOPE/INFO     
+EMPTY        -               1        0        N/A            
+SEP          -               1        6        N/A            
+MAIN         __main__        1        8        Scope 0        
+PAR_I        -               1        17       N/A            
+PAR_D        -               1        20       N/A            
+LLAVE_I      -               1        23       N/A            
+INT          -               2        2        N/A            
+SEP          -               2        6        N/A            
+ID           x               2        8        Scope 1        
+ASSIGN       -               2        10       N/A            
+NUM          10              2        13       N/A            
+PYC          -               2        16       N/A            
+LEX_ERROR    ¿               3        2        N/A            
+LEX_ERROR    ?               3        4        N/A            
+LLAVE_D      -               4        0        N/A            

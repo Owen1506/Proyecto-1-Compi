@@ -17,6 +17,8 @@ public class Simbolo {
         this.scope = scope;
     }
 
+    public int getScope() { return scope; }
+    
     public String toString() {
         return String.format(
             "[Scope %d] Nombre: %s : Tipo: %s Categoria: %s  Linea:%d Columna:%d",

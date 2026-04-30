@@ -1,4 +1,4 @@
-int __main__ <| |> |:
+empty ~ __main__ <| |> |:
   int ~ x!
   float ~ y!
   x<-5!

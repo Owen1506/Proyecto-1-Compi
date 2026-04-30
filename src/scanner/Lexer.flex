@@ -42,22 +42,61 @@ private void addToken(String token, String lexema) {
     tokenLog.add(new TokenInfo(token, lexema, yyline + 1, yycolumn));
 }
 
-public void exportarTokens(String ruta) {
+public void exportarTokens(String ruta, tabla.TablaManagement tablaManager) {
     try (PrintWriter writer = new PrintWriter(new FileWriter(ruta))) {
         writer.println("           LISTA DE TOKENS            ");
-        writer.printf("%-12s %-15s %-8s %-8s%n",
-                "TOKEN", "LEXEMA", "LINEA", "COL");
+        writer.printf("%-12s %-15s %-8s %-8s %-15s%n",
+                "TOKEN", "LEXEMA", "LINEA", "COL", "SCOPE/INFO");
         for (TokenInfo t : tokenLog) {
-            writer.printf("%-12s %-15s %-8d %-8d%n",
+            String extraInfo = "N/A";
+            if (t.token.equals("ID") || t.token.equals("MAIN")) {
+                if (tablaManager != null) {
+                    tabla.Simbolo sim = tablaManager.buscarEnHistorial(t.lexema);
+                    if (sim != null) {
+                        extraInfo = "Scope " + sim.getScope();
+                    } else {
+                        extraInfo = "Scope (Pendiente)";
+                    }
+                }
+            }
+            writer.printf("%-12s %-15s %-8d %-8d %-15s%n",
                     t.token,
                     t.lexema,
                     t.linea,
-                    t.columna);
+                    t.columna,
+                    extraInfo);
         }
         System.out.println("Tokens exportados correctamente a: " + ruta);
     } catch (IOException e) {
         System.err.println("Error al exportar tokens: " + e.getMessage());
     }
+}
+
+public void exportarErroresLexicos(String ruta) {
+    try (PrintWriter writer = new PrintWriter(new FileWriter(ruta))) {
+        boolean hayErrores = false;
+        for (TokenInfo t : tokenLog) {
+            if (t.token.equals("LEX_ERROR")) {
+                writer.printf("ERROR LEXICO -> Linea %d, Columna %d, Caracter: '%s'%n", 
+                        t.linea, t.columna, t.lexema);
+                hayErrores = true;
+            }
+        }
+        if (!hayErrores) {
+            writer.println("No se detectaron errores léxicos.");
+        }
+        System.out.println("Errores léxicos exportados a: " + ruta);
+    } catch (IOException e) {
+        System.err.println("Error al exportar errores léxicos: " + e.getMessage());
+    }
+}
+
+public int getCurrentLine() {
+    return yyline + 1;
+}
+
+public int getCurrentColumn() {
+    return yycolumn + 1;
 }
 
 %}
@@ -97,7 +136,7 @@ BlockComment = "{-"([^\-]|-+[^}])*"-}"
 "empty"     { addToken("EMPTY"); return new Symbol(sym.EMPTY, yyline+1, yycolumn, yytext()); }
 "expint"    { addToken("EXPINT_KW"); return new Symbol(sym.EXPINT_KW, yyline+1, yycolumn, yytext()); }
 "frac"      { addToken("FRAC_KW"); return new Symbol(sym.FRAC_KW, yyline+1, yycolumn, yytext()); }
-"__main__"  { addToken("MAIN"); return new Symbol(sym.MAIN, yyline+1, yycolumn, yytext()); }
+"__main__"  { addToken("MAIN", "__main__"); return new Symbol(sym.MAIN, yyline+1, yycolumn, yytext()); }
 
 "if"        { addToken("IF"); return new Symbol(sym.IF, yyline+1, yycolumn, yytext()); }
 "else"      { addToken("ELSE"); return new Symbol(sym.ELSE, yyline+1, yycolumn, yytext()); }

@@ -36,7 +36,8 @@ public class Main {
                 }
 
                 // Siempre exportar tokens y tablas aunque haya habido errores
-                lexer.exportarTokens("tokens.txt");
+                lexer.exportarTokens("tokens.txt", p.getTabla());
+                lexer.exportarErroresLexicos("lexical_errors.txt");
 
                 // Exportar errores sintácticos detectados por el parser
                 try (java.io.PrintWriter se = new java.io.PrintWriter(new java.io.FileWriter("syntax_errors.txt"))) {
@@ -50,9 +51,6 @@ public class Main {
                 System.out.println("\n=== TABLA DE SIMBOLOS ===");
                 p.getTabla().imprimirHistorial();
                 p.getTabla().exportarTXT("tabla_simbolos.txt");
-
-                // Exportar errores semánticos (redeclaraciones, etc.)
-                p.getTabla().exportErrors("semantic_errors.txt");
 
             } finally {
                 try { fileReader.close(); } catch (Exception ex) {}

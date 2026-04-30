@@ -1,0 +1,9 @@
+empty ~ __main__ <| |> |:
+  int ~ a <- 10 !
+  int ~ b <- 3 !
+  int ~ suma <- a + b !
+  int ~ resta <- a - b !
+  int ~ mult <- a * b !
+  int ~ div <- a / b !
+  int ~ mod <- a % b !
+:|

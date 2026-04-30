@@ -42,9 +42,25 @@ parser code {:
     @Override
     public void report_error(String message, Object info) {
         String formatted;
+        int line = -1;
         if (info instanceof Symbol) {
             Symbol symbol = (Symbol) info;
-            formatted = "Error sintáctico en línea " + symbol.left + ": " + message;
+            if (symbol.left > 0) line = symbol.left;
+        }
+        // If symbol doesn't provide a line, try to ask the scanner (lexer) for current position
+        if (line == -1) {
+            try {
+                java_cup.runtime.Scanner currentScanner = getScanner();
+                if (currentScanner instanceof scanner.Lexer) {
+                    line = ((scanner.Lexer) currentScanner).getCurrentLine();
+                }
+            } catch (Exception ex) {
+                // ignore and leave line as -1
+            }
+        }
+
+        if (line > 0) {
+            formatted = "Error sintáctico en línea " + line + ": " + message;
         } else {
             formatted = "Error sintáctico: " + message;
         }
@@ -233,6 +249,12 @@ sentencia ::= declaracion
             | expresion error LLAVE_D {: System.err.println("Error: faltó fin de sentencia en expresión antes de cerrar bloque"); :}
             | error PYC {: System.err.println("Error en sentencia"); :}
             | error LLAVE_D {: System.err.println("Error en sentencia antes del cierre de bloque"); :}
+            /* Manejar token léxico inválido devuelto por el lexer: consumirlo y reportarlo */
+                        | LEX_ERROR:lexError {: 
+                                report_error("Token léxico inválido: '" + lexError + "'", new Symbol(sym.LEX_ERROR, lexErrorleft, lexErrorright, lexError));
+                            :}
+            | LEX_ERROR:e
+  {: System.err.println("Token léxico inválido ignorado en línea " + eleft); :}
             ;
 
 declaracion ::= declaracion_num
@@ -266,8 +288,8 @@ declaracion_num ::= INT SEP ID:id declaracion_num_resto
 
 declaracion_num_resto ::= PYC
                         | ASSIGN expresion PYC
-                        | ARR_I NUM COMMA NUM ARR_D PYC
-                        | ARR_I NUM COMMA NUM ARR_D ASSIGN LLAVE_I filas_init LLAVE_D PYC
+                        | ARR_I NUM ARR_D ARR_I NUM ARR_D PYC
+                        | ARR_I NUM ARR_D ARR_I NUM ARR_D ASSIGN LLAVE_I filas_init LLAVE_D PYC
                         | error PYC {: System.err.println("Error en declaración numérica"); :}
                         ;
 
@@ -334,7 +356,7 @@ declaracion_scalar_resto ::= PYC
                            | error PYC {: System.err.println("Error en declaración escalar"); :}
                            ;
 
-dimensiones ::= ARR_I NUM COMMA NUM ARR_D;
+dimensiones ::= ARR_I NUM ARR_D ARR_I NUM ARR_D;
 
 filas_init ::= filas_init COMMA fila_init
              | fila_init
@@ -359,8 +381,8 @@ asignacion_array ::= acceso_array ASSIGN expr_aritmetica PYC
                    | acceso_array ASSIGN error PYC {: System.err.println("Error en asignación de arreglo"); :}
                    ;
 
-acceso_array ::= ID ARR_I expr_aritmetica COMMA expr_aritmetica ARR_D
-               | ID ARR_I error ARR_D {: System.err.println("Error en acceso a arreglo"); :}
+acceso_array ::= ID ARR_I expr_aritmetica ARR_D ARR_I expr_aritmetica ARR_D
+               | ID ARR_I error ARR_D ARR_I error ARR_D {: System.err.println("Error en acceso a arreglo"); :}
                ;
 
 condicional ::= IF SEP PAR_I expresion PAR_D bloque
@@ -499,6 +521,8 @@ factor ::= unario
          | STRING_LIT
          | CHAR_LIT
          | acceso_array
+         | LEX_ERROR:e
+  {: System.err.println("Token léxico inválido en expresión, línea " + eleft); :}
          | llamada_funcion
          | PAR_I expresion PAR_D
          ;

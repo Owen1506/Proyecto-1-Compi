@@ -1,0 +1,13 @@
+empty ~ __main__ <| |> |:
+  int ~ matriz << 2 >> << 2 >> !
+  matriz << 0 >> << 0 >> <- 1 !
+  matriz << 0 >> << 1 >> <- 2 !
+  matriz << 1 >> << 0 >> <- 3 !
+  matriz << 1 >> << 1 >> <- 4 !
+  
+  int ~ i <- 0 !
+  do ~ |:
+    cout ~ matriz << 0 >> << 0 >> !
+    i <- i + 1 !
+  :| while ~ <| less_t<| i , 2 |> |> !
+:|

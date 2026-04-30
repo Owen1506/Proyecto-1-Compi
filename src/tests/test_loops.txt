@@ -1,4 +1,4 @@
-int __main__ <| |> |:
+empty ~ __main__ <| |> |:
 int ~ i <- 0 !
 do ~ |:
 i <- i + 1 !

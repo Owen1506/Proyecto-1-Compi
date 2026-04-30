@@ -1,0 +1,2 @@
+ERROR LEXICO -> Linea 3, Columna 2, Caracter: '¿'
+ERROR LEXICO -> Linea 3, Columna 4, Caracter: '?'

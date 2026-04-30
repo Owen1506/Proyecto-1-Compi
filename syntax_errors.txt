@@ -1,0 +1,2 @@
+Error sintáctico en línea 3: Token léxico inválido: '¿'
+Error sintáctico en línea 3: Token léxico inválido: '?'
